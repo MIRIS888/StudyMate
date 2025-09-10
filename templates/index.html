@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Studijní Asistent</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .input-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .input-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .input-card:hover {
+            border-color: #4facfe;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79,172,254,0.2);
+        }
+
+        .input-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .file-upload {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .file-upload input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-upload-btn {
+            display: block;
+            background: #4facfe;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s ease;
+        }
+
+        .file-upload-btn:hover {
+            background: #3a92f7;
+        }
+
+        .select-group {
+            margin-bottom: 15px;
+        }
+
+        .select-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .select-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            background: white;
+        }
+
+        .analyze-btn {
+            background: #28a745;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            margin-top: 20px;
+            width: 100%;
+            transition: background 0.3s ease;
+        }
+
+        .analyze-btn:hover {
+            background: #218838;
+        }
+
+        .analyze-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #4facfe;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .result-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4facfe;
+        }
+
+        .result-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+
+        .summary-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .summary-list li {
+            background: white;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border-left: 3px solid #28a745;
+        }
+
+        .question {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid #e9ecef;
+        }
+
+        .question h4 {
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .options {
+            list-style: none;
+            padding: 0;
+        }
+
+        .options li {
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .options li:hover {
+            background: #f8f9fa;
+        }
+
+        .options li.correct {
+            background: #d4edda;
+            border-left: 3px solid #28a745;
+        }
+
+        .flashcards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .flashcard {
+            perspective: 1000px;
+            height: 200px;
+            cursor: pointer;
+        }
+
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        .flashcard.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .flashcard-front {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .flashcard-back {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #f5c6cb;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .input-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI Studijní Asistent</h1>
+            <p>Nahrajte soubor nebo vyberte téma pro analýzu a vytvoření studijních materiálů</p>
+        </div>
+        
+        <div class="main-content">
+            <form id="analysisForm">
+                <div class="input-section">
+                    <div class="input-card">
+                        <h3>📁 Nahrát soubor</h3>
+                        <div class="file-upload">
+                            <input type="file" id="fileInput" name="file" accept=".pdf,.docx,.txt">
+                            <div class="file-upload-btn">
+                                Vyberte soubor (PDF, DOCX, TXT)
+                            </div>
+                        </div>
+                        <p id="fileName" style="margin-top: 10px; color: #666; font-size: 0.9em;"></p>
+                    </div>
+                    
+                    <div class="input-card">
+                        <h3>📚 Vybrat z databáze</h3>
+                        <div class="select-group">
+                            <label for="subject">Předmět:</label>
+                            <select id="subject" name="subject">
+                                <option value="">-- Vyberte předmět --</option>
+                                {% for subject in materials.keys() %}
+                                <option value="{{ subject }}">{{ subject }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="select-group">
+                            <label for="topic">Téma:</label>
+                            <select id="topic" name="topic">
+                                <option value="">-- Nejprve vyberte předmět --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="analyze-btn" id="analyzeBtn">
+                    🔍 Analyzovat a vytvořit studijní materiály
+                </button>
+            </form>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Zpracovávám text pomocí AI... Prosím čekejte.</p>
+            </div>
+            
+            <div class="results" id="results">
+                <div class="result-section">
+                    <h3>📋 Shrnutí látky</h3>
+                    <ul class="summary-list" id="summaryList"></ul>
+                </div>
+                
+                <div class="result-section">
+                    <h3>❓ Testové otázky</h3>
+                    <div id="questionsList"></div>
+                </div>
+                
+                <div class="result-section">
+                    <h3>🃏 Kartičky pro procvičování</h3>
+                    <p style="color: #666; margin-bottom: 15px;">Klikněte na kartičku pro otočení</p>
+                    <div class="flashcards" id="flashcardsList"></div>
+                </div>
+            </div>
+            
+            <div class="error" id="error" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Studijní materiály z backendu
+        const materials = {{ materials|tojson }};
+        
+        // DOM elementy
+        const form = document.getElementById('analysisForm');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const subjectSelect = document.getElementById('subject');
+        const topicSelect = document.getElementById('topic');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const error = document.getElementById('error');
+        
+        // Aktualizace názvu souboru
+        fileInput.addEventListener('change', function() {
+            if (this.files[0]) {
+                fileName.textContent = `Vybraný soubor: ${this.files[0].name}`;
+                // Vyčistit výběr z databáze
+                subjectSelect.value = '';
+                topicSelect.innerHTML = '<option value="">-- Nejprve vyberte předmět --</option>';
+            } else {
+                fileName.textContent = '';
+            }
+        });
+        
+        // Aktualizace témat při výběru předmětu
+        subjectSelect.addEventListener('change', function() {
+            const selectedSubject = this.value;
+            topicSelect.innerHTML = '';
+            
+            if (selectedSubject && materials[selectedSubject]) {
+                topicSelect.innerHTML = '<option value="">-- Vyberte téma --</option>';
+                Object.keys(materials[selectedSubject]).forEach(topic => {
+                    const option = document.createElement('option');
+                    option.value = topic;
+                    option.textContent = topic;
+                    topicSelect.appendChild(option);
+                });
+                
+                // Vyčistit výběr souboru
+                fileInput.value = '';
+                fileName.textContent = '';
+            } else {
+                topicSelect.innerHTML = '<option value="">-- Nejprve vyberte předmět --</option>';
+            }
+        });
+        
+        // Odeslání formuláře
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Validace vstupu
+            const hasFile = fileInput.files[0];
+            const hasSelection = subjectSelect.value && topicSelect.value;
+            
+            if (!hasFile && !hasSelection) {
+                showError('Prosím vyberte soubor nebo téma z databáze.');
+                return;
+            }
+            
+            // Zobrazení načítání
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            error.style.display = 'none';
+            analyzeBtn.disabled = true;
+            
+            try {
+                // Příprava dat
+                const formData = new FormData();
+                if (hasFile) {
+                    formData.append('file', fileInput.files[0]);
+                } else {
+                    formData.append('subject', subjectSelect.value);
+                    formData.append('topic', topicSelect.value);
+                }
+                
+                // API volání
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    showError(data.error);
+                } else {
+                    showResults(data);
+                }
+                
+            } catch (err) {
+                showError('Chyba při komunikaci se serverem: ' + err.message);
+            } finally {
+                loading.style.display = 'none';
+                analyzeBtn.disabled = false;
+            }
+        });
+        
+        function showError(message) {
+            error.textContent = message;
+            error.style.display = 'block';
+            results.style.display = 'none';
+        }
+        
+        function showResults(data) {
+            // Shrnutí
+            const summaryList = document.getElementById('summaryList');
+            summaryList.innerHTML = '';
+            data.summary.forEach(point => {
+                const li = document.createElement('li');
+                li.textContent = point;
+                summaryList.appendChild(li);
+            });
+            
+            // Otázky
+            const questionsList = document.getElementById('questionsList');
+            questionsList.innerHTML = '';
+            data.questions.forEach((q, index) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'question';
+                
+                const questionTitle = document.createElement('h4');
+                questionTitle.textContent = `${index + 1}. ${q.question}`;
+                questionDiv.appendChild(questionTitle);
+                
+                const optionsList = document.createElement('ul');
+                optionsList.className = 'options';
+                
+                q.options.forEach(option => {
+                    const li = document.createElement('li');
+                    li.textContent = option;
+                    if (option.startsWith(q.correct)) {
+                        li.className = 'correct';
+                    }
+                    optionsList.appendChild(li);
+                });
+                
+                questionDiv.appendChild(optionsList);
+                questionsList.appendChild(questionDiv);
+            });
+            
+            // Kartičky
+            const flashcardsList = document.getElementById('flashcardsList');
+            flashcardsList.innerHTML = '';
+            data.flashcards.forEach((card, index) => {
+                const flashcardDiv = document.createElement('div');
+                flashcardDiv.className = 'flashcard';
+                flashcardDiv.innerHTML = `
+                    <div class="flashcard-inner">
+                        <div class="flashcard-front">
+                            <h4>${card.question}</h4>
+                        </div>
+                        <div class="flashcard-back">
+                            <p>${card.answer}</p>
+                        </div>
+                    </div>
+                `;
+                
+                // Flip efekt
+                flashcardDiv.addEventListener('click', function() {
+                    this.classList.toggle('flipped');
+                });
+                
+                flashcardsList.appendChild(flashcardDiv);
+            });
+            
+            results.style.display = 'block';
+            error.style.display = 'none';
+        }
+    </script>
+</body>
+</html>

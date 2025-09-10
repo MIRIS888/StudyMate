@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}StudyMate - AI Studijní Asistent{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/prometica-theme.css') }}">
+    <style>
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border-color);
+            color: var(--text-primary);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
+            transition: all var(--transition-normal);
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5em;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .sidebar-user {
+            margin-top: 16px;
+            padding: 16px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(10px);
+            border-radius: var(--border-radius-sm);
+            border: 1px solid var(--border-color);
+            font-size: 0.9em;
+            color: var(--text-secondary);
+        }
+
+        .sidebar-nav {
+            padding: 20px 0;
+        }
+
+        .nav-item {
+            margin-bottom: 5px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all var(--transition-normal);
+            border-radius: var(--border-radius-sm);
+            margin: 4px 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background: var(--gradient-primary);
+            transform: scaleY(0);
+            transition: transform var(--transition-normal);
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: var(--bg-glass);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .nav-link.active::before {
+            transform: scaleY(1);
+        }
+
+        .nav-icon {
+            font-size: 1.2em;
+            width: 20px;
+            text-align: center;
+        }
+
+        .sidebar-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-header {
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 24px 32px;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .page-title {
+            font-size: 1.8em;
+            color: var(--text-primary);
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .main-body {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Mobile Sidebar Toggle */
+        .sidebar-toggle {
+            display: none;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            font-size: 1.2em;
+            box-shadow: var(--shadow-md);
+            transition: all var(--transition-normal);
+        }
+
+        .sidebar-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        /* Flash Messages */
+        .flash-messages {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 1001;
+            max-width: 400px;
+        }
+
+        .flash-message {
+            padding: 16px 24px;
+            margin-bottom: 12px;
+            border-radius: var(--border-radius-sm);
+            color: white;
+            font-weight: 500;
+            box-shadow: var(--shadow-xl);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            animation: slideIn 0.5s ease;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+
+        .flash-message:hover {
+            transform: translateX(-4px);
+        }
+
+        .flash-message.success { background: linear-gradient(135deg, var(--success-color), #16a34a); }
+        .flash-message.error { background: linear-gradient(135deg, var(--error-color), #dc2626); }
+        .flash-message.warning { background: linear-gradient(135deg, var(--warning-color), #d97706); }
+        .flash-message.info { background: linear-gradient(135deg, var(--info-color), #0891b2); }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%) scale(0.9); opacity: 0; }
+            to { transform: translateX(0) scale(1); opacity: 1; }
+        }
+
+        /* Override btn styles are handled by prometica-theme.css */
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                box-shadow: var(--shadow-xl);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .sidebar-toggle {
+                display: block;
+            }
+
+            .main-header {
+                padding: 20px 24px;
+            }
+
+            .page-title {
+                font-size: 1.5em;
+            }
+
+            .main-body {
+                padding: 24px;
+            }
+
+            .flash-messages {
+                left: 16px;
+                right: 16px;
+                top: 16px;
+                max-width: none;
+            }
+
+            .nav-link {
+                margin: 4px 8px;
+            }
+        }
+
+        /* Sidebar Overlay for Mobile */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            transition: all var(--transition-normal);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-overlay.active {
+                display: block;
+                animation: fadeIn 0.3s ease;
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <span style="font-size: 1.8em;">🤖</span>
+                    <span class="fade-in">StudyMate</span>
+                </div>
+                <div class="sidebar-user">
+                    Vítej, {{ current_user.username }}!
+                </div>
+            </div>
+            
+            <div class="sidebar-nav">
+                <div class="nav-item">
+                    <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                        <span class="nav-icon">🏠</span>
+                        Dashboard
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{{ url_for('study') }}" class="nav-link {% if request.endpoint == 'study' %}active{% endif %}">
+                        <span class="nav-icon">📚</span>
+                        Analýza materiálů
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{{ url_for('analytics') }}" class="nav-link {% if request.endpoint == 'analytics' %}active{% endif %}">
+                        <span class="nav-icon">📊</span>
+                        Statistiky učení
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{{ url_for('notes') }}" class="nav-link {% if request.endpoint == 'notes' %}active{% endif %}">
+                        <span class="nav-icon">📝</span>
+                        Moje poznámky
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{{ url_for('settings') }}" class="nav-link {% if request.endpoint == 'settings' %}active{% endif %}">
+                        <span class="nav-icon">⚙️</span>
+                        Nastavení
+                    </a>
+                </div>
+            </div>
+            
+            <div class="sidebar-footer">
+                <a href="{{ url_for('logout') }}" class="nav-link">
+                    <span class="nav-icon">🚪</span>
+                    Odhlásit se
+                </a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <header class="main-header">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+                    <h1 class="page-title">{% block page_title %}StudyMate{% endblock %}</h1>
+                </div>
+                <div class="header-actions">
+                    {% block header_actions %}{% endblock %}
+                </div>
+            </header>
+            
+            <main class="main-body">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    <div class="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}" onclick="this.style.display='none'">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <script>
+        // Sidebar Toggle
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        });
+
+        // Close sidebar when clicking overlay
+        document.getElementById('sidebarOverlay').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+        });
+
+        // Auto-hide flash messages
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(function(message) {
+                setTimeout(function() {
+                    message.style.opacity = '0';
+                    setTimeout(function() {
+                        message.style.display = 'none';
+                    }, 300);
+                }, 5000);
+            });
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

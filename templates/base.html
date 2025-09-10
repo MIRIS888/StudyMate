@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}StudyMate - AI Studijní Asistent{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/prometica-theme.css') }}">
+    <style>
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Flash Messages - using Prometica theme */
+        .flash-messages {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 1000;
+            max-width: 400px;
+        }
+
+        .flash-message {
+            padding: 16px 24px;
+            margin-bottom: 12px;
+            border-radius: var(--border-radius-sm);
+            color: white;
+            font-weight: 500;
+            box-shadow: var(--shadow-xl);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            animation: slideIn 0.5s ease;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+
+        .flash-message:hover {
+            transform: translateX(-4px);
+        }
+
+        .flash-message.success { background: linear-gradient(135deg, var(--success-color), #16a34a); }
+        .flash-message.error { background: linear-gradient(135deg, var(--error-color), #dc2626); }
+        .flash-message.warning { background: linear-gradient(135deg, var(--warning-color), #d97706); }
+        .flash-message.info { background: linear-gradient(135deg, var(--info-color), #0891b2); }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%) scale(0.9); opacity: 0; }
+            to { transform: translateX(0) scale(1); opacity: 1; }
+        }
+
+        /* Forms - using Prometica theme */
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        /* Buttons handled by prometica-theme.css */
+        .btn-block {
+            width: 100%;
+        }
+
+        /* Error messages */
+        .field-errors {
+            color: var(--error-color);
+            font-size: 13px;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+
+        .field-errors ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 16px;
+            }
+            
+            .flash-messages {
+                left: 16px;
+                right: 16px;
+                top: 16px;
+                max-width: none;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Flash Messages -->
+    <div class="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}" onclick="this.style.display='none'">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    {% block content %}{% endblock %}
+
+    <script>
+        // Auto-hide flash messages after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(function(message) {
+                setTimeout(function() {
+                    message.style.opacity = '0';
+                    setTimeout(function() {
+                        message.style.display = 'none';
+                    }, 300);
+                }, 5000);
+            });
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

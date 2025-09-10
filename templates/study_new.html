@@ -1,0 +1,416 @@
+{% extends "base_dashboard_new.html" %}
+
+{% block title %}Analýza materiálů - StudyMate{% endblock %}
+{% block page_title %}Analýza materiálů{% endblock %}
+
+{% block header_actions %}
+<div class="alert alert-info" style="margin: 0; padding: 0.5rem 1rem; font-size: 0.8125rem;">
+    Nahrajte soubor nebo vyberte téma pro AI analýzu
+</div>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <!-- Upload Form -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <div class="card-body">
+            <form id="analysisForm">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                    <!-- File Upload -->
+                    <div>
+                        <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                            📁 Nahrát soubor
+                        </h3>
+                        <div class="form-group">
+                            <input type="file" id="fileInput" name="file" accept=".pdf,.docx,.txt" class="form-control">
+                            <div style="font-size: 0.8125rem; color: var(--text-muted); margin-top: 0.5rem;">
+                                Podporované formáty: PDF, DOCX, TXT (max 16MB)
+                            </div>
+                            <p id="fileName" style="margin-top: 0.5rem; color: var(--success); font-weight: 500; font-size: 0.875rem;"></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Database Selection -->
+                    <div>
+                        <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                            📚 Vybrat z databáze
+                        </h3>
+                        <div class="form-group">
+                            <label for="subject" class="form-label">Předmět:</label>
+                            <select id="subject" name="subject" class="form-control">
+                                <option value="">-- Vyberte předmět --</option>
+                                {% for subject in materials.keys() %}
+                                <option value="{{ subject }}">{{ subject }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="topic" class="form-label">Téma:</label>
+                            <select id="topic" name="topic" class="form-control">
+                                <option value="">-- Nejprve vyberte předmět --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-success btn-block btn-lg" id="analyzeBtn">
+                    🔍 Analyzovat a vytvořit studijní materiály
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Loading State -->
+    <div class="card" id="loading" style="display: none; text-align: center;">
+        <div class="card-body" style="padding: 3rem;">
+            <div class="loading-spinner" style="margin: 0 auto 1rem;"></div>
+            <p>Zpracovávám text pomocí AI... Prosím čekejte.</p>
+        </div>
+    </div>
+    
+    <!-- Results -->
+    <div id="results" style="display: none;">
+        <!-- Summary -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div class="card-header">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                    📋 Shrnutí látky
+                </h3>
+            </div>
+            <div class="card-body">
+                <ul id="summaryList" style="list-style: none; padding: 0;"></ul>
+            </div>
+        </div>
+        
+        <!-- Questions -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div class="card-header">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                    ❓ Testové otázky
+                </h3>
+            </div>
+            <div class="card-body">
+                <div id="questionsList"></div>
+            </div>
+        </div>
+        
+        <!-- Flashcards -->
+        <div class="card">
+            <div class="card-header">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                    🃏 Kartičky pro procvičování
+                </h3>
+            </div>
+            <div class="card-body">
+                <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.875rem;">
+                    Klikněte na kartičku pro otočení
+                </p>
+                <div id="flashcardsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Error State -->
+    <div class="alert alert-error" id="error" style="display: none;"></div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .question-item {
+        background-color: var(--bg-tertiary);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        border: 1px solid var(--border-light);
+    }
+
+    .question-title {
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--text-primary);
+    }
+
+    .question-options {
+        list-style: none;
+        padding: 0;
+    }
+
+    .question-option {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        background-color: white;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        cursor: pointer;
+        transition: var(--transition);
+        font-size: 0.875rem;
+    }
+
+    .question-option:hover {
+        background-color: var(--bg-hover);
+    }
+
+    .question-option.correct {
+        background-color: #f0fdf4;
+        border-color: var(--success);
+        color: #166534;
+        font-weight: 500;
+    }
+
+    .summary-item {
+        padding: 1rem;
+        background-color: var(--bg-tertiary);
+        border-radius: var(--radius);
+        margin-bottom: 0.75rem;
+        border-left: 4px solid var(--primary);
+        font-size: 0.875rem;
+        line-height: 1.6;
+    }
+
+    .flashcard {
+        perspective: 1000px;
+        height: 200px;
+        cursor: pointer;
+    }
+
+    .flashcard-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        text-align: center;
+        transition: transform 0.6s;
+        transform-style: preserve-3d;
+        border-radius: var(--radius);
+    }
+
+    .flashcard.flipped .flashcard-inner {
+        transform: rotateY(180deg);
+    }
+
+    .flashcard-front, .flashcard-back {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        backface-visibility: hidden;
+        border-radius: var(--radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+    }
+
+    .flashcard-front {
+        background-color: var(--primary);
+        color: white;
+    }
+
+    .flashcard-back {
+        background-color: var(--success);
+        color: white;
+        transform: rotateY(180deg);
+    }
+
+    .flashcard h4, .flashcard p {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 500;
+        line-height: 1.4;
+    }
+
+    @media (max-width: 768px) {
+        .card-body > div:first-child {
+            grid-template-columns: 1fr !important;
+            gap: 1.5rem !important;
+        }
+        
+        #flashcardsList {
+            grid-template-columns: 1fr !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Studijní materiály z backendu
+    const materials = {{ materials|tojson }};
+    
+    // DOM elementy
+    const form = document.getElementById('analysisForm');
+    const fileInput = document.getElementById('fileInput');
+    const fileName = document.getElementById('fileName');
+    const subjectSelect = document.getElementById('subject');
+    const topicSelect = document.getElementById('topic');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const loading = document.getElementById('loading');
+    const results = document.getElementById('results');
+    const error = document.getElementById('error');
+    
+    // Aktualizace názvu souboru
+    fileInput.addEventListener('change', function() {
+        if (this.files[0]) {
+            fileName.textContent = `✓ Vybraný soubor: ${this.files[0].name}`;
+            // Vyčistit výběr z databáze
+            subjectSelect.value = '';
+            topicSelect.innerHTML = '<option value="">-- Nejprve vyberte předmět --</option>';
+        } else {
+            fileName.textContent = '';
+        }
+    });
+    
+    // Aktualizace témat při výběru předmětu
+    subjectSelect.addEventListener('change', function() {
+        const selectedSubject = this.value;
+        topicSelect.innerHTML = '';
+        
+        if (selectedSubject && materials[selectedSubject]) {
+            topicSelect.innerHTML = '<option value="">-- Vyberte téma --</option>';
+            Object.keys(materials[selectedSubject]).forEach(topic => {
+                const option = document.createElement('option');
+                option.value = topic;
+                option.textContent = topic;
+                topicSelect.appendChild(option);
+            });
+            
+            // Vyčistit výběr souboru
+            fileInput.value = '';
+            fileName.textContent = '';
+        } else {
+            topicSelect.innerHTML = '<option value="">-- Nejprve vyberte předmět --</option>';
+        }
+    });
+    
+    // Odeslání formuláře
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Validace vstupu
+        const hasFile = fileInput.files[0];
+        const hasSelection = subjectSelect.value && topicSelect.value;
+        
+        if (!hasFile && !hasSelection) {
+            showError('Prosím vyberte soubor nebo téma z databáze.');
+            return;
+        }
+        
+        // Zobrazení načítání
+        loading.style.display = 'block';
+        results.style.display = 'none';
+        error.style.display = 'none';
+        analyzeBtn.disabled = true;
+        analyzeBtn.textContent = 'Zpracovávám...';
+        
+        try {
+            // Příprava dat
+            const formData = new FormData();
+            if (hasFile) {
+                formData.append('file', fileInput.files[0]);
+            } else {
+                formData.append('subject', subjectSelect.value);
+                formData.append('topic', topicSelect.value);
+            }
+            
+            // API volání
+            const response = await fetch('/analyze', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.error) {
+                showError(data.error);
+            } else {
+                showResults(data);
+            }
+            
+        } catch (err) {
+            showError('Chyba při komunikaci se serverem: ' + err.message);
+        } finally {
+            loading.style.display = 'none';
+            analyzeBtn.disabled = false;
+            analyzeBtn.textContent = '🔍 Analyzovat a vytvořit studijní materiály';
+        }
+    });
+    
+    function showError(message) {
+        error.textContent = message;
+        error.style.display = 'block';
+        results.style.display = 'none';
+        error.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    function showResults(data) {
+        // Shrnutí
+        const summaryList = document.getElementById('summaryList');
+        summaryList.innerHTML = '';
+        data.summary.forEach(point => {
+            const li = document.createElement('li');
+            li.className = 'summary-item';
+            li.textContent = point;
+            summaryList.appendChild(li);
+        });
+        
+        // Otázky
+        const questionsList = document.getElementById('questionsList');
+        questionsList.innerHTML = '';
+        data.questions.forEach((q, index) => {
+            const questionDiv = document.createElement('div');
+            questionDiv.className = 'question-item';
+            
+            const questionTitle = document.createElement('h4');
+            questionTitle.className = 'question-title';
+            questionTitle.textContent = `${index + 1}. ${q.question}`;
+            questionDiv.appendChild(questionTitle);
+            
+            const optionsList = document.createElement('ul');
+            optionsList.className = 'question-options';
+            
+            q.options.forEach(option => {
+                const li = document.createElement('li');
+                li.className = 'question-option';
+                li.textContent = option;
+                if (option.startsWith(q.correct)) {
+                    li.classList.add('correct');
+                }
+                optionsList.appendChild(li);
+            });
+            
+            questionDiv.appendChild(optionsList);
+            questionsList.appendChild(questionDiv);
+        });
+        
+        // Kartičky
+        const flashcardsList = document.getElementById('flashcardsList');
+        flashcardsList.innerHTML = '';
+        data.flashcards.forEach((card, index) => {
+            const flashcardDiv = document.createElement('div');
+            flashcardDiv.className = 'flashcard';
+            flashcardDiv.innerHTML = `
+                <div class="flashcard-inner">
+                    <div class="flashcard-front">
+                        <h4>${card.question}</h4>
+                    </div>
+                    <div class="flashcard-back">
+                        <p>${card.answer}</p>
+                    </div>
+                </div>
+            `;
+            
+            // Flip efekt
+            flashcardDiv.addEventListener('click', function() {
+                this.classList.toggle('flipped');
+            });
+            
+            flashcardsList.appendChild(flashcardDiv);
+        });
+        
+        results.style.display = 'block';
+        error.style.display = 'none';
+        results.scrollIntoView({ behavior: 'smooth' });
+    }
+</script>
+{% endblock %}

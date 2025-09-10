@@ -1,0 +1,263 @@
+{% extends "base_dashboard_new.html" %}
+
+{% block title %}Nastavení - StudyMate{% endblock %}
+{% block page_title %}Nastavení{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <div style="display: flex; flex-direction: column; gap: 2rem;">
+        
+        <!-- Profile Settings -->
+        <div class="card">
+            <div class="card-header">
+                <h3 style="margin: 0;">👤 Profil</h3>
+            </div>
+            <div class="card-body">
+                <div style="display: grid; gap: 1rem;">
+                    <div class="form-group">
+                        <label class="form-label">Uživatelské jméno</label>
+                        <input type="text" class="form-control" value="{{ current_user.username }}" readonly 
+                               style="background-color: var(--bg-tertiary);">
+                        <div style="font-size: 0.8125rem; color: var(--text-muted); margin-top: 0.25rem;">
+                            Uživatelské jméno nelze změnit
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" value="{{ current_user.email }}" readonly 
+                               style="background-color: var(--bg-tertiary);">
+                        <div style="font-size: 0.8125rem; color: var(--text-muted); margin-top: 0.25rem;">
+                            Pro změnu emailu kontaktujte podporu
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Registrace</label>
+                        <input type="text" class="form-control" value="{{ current_user.created_at.strftime('%d.%m.%Y %H:%M') }}" readonly 
+                               style="background-color: var(--bg-tertiary);">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Password Change -->
+        <div class="card">
+            <div class="card-header">
+                <h3 style="margin: 0;">🔒 Změna hesla</h3>
+            </div>
+            <div class="card-body">
+                <form id="passwordForm" style="display: grid; gap: 1rem;">
+                    <div class="form-group">
+                        <label class="form-label">Současné heslo</label>
+                        <input type="password" class="form-control" name="current_password" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Nové heslo</label>
+                        <input type="password" class="form-control" name="new_password" required minlength="6">
+                        <div style="font-size: 0.8125rem; color: var(--text-muted); margin-top: 0.25rem;">
+                            Minimálně 6 znaků
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Potvrdit nové heslo</label>
+                        <input type="password" class="form-control" name="confirm_password" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="justify-self: start;">Změnit heslo</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Study Preferences -->
+        <div class="card">
+            <div class="card-header">
+                <h3 style="margin: 0;">📚 Předvolby studia</h3>
+            </div>
+            <div class="card-body">
+                <form id="studyPrefsForm" style="display: grid; gap: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Výchozí počet otázek</label>
+                            <select class="form-control" name="default_questions">
+                                <option value="5" selected>5 otázek</option>
+                                <option value="10">10 otázek</option>
+                                <option value="15">15 otázek</option>
+                                <option value="20">20 otázek</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Výchozí počet kartiček</label>
+                            <select class="form-control" name="default_flashcards">
+                                <option value="5" selected>5 kartiček</option>
+                                <option value="10">10 kartiček</option>
+                                <option value="15">15 kartiček</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;">
+                            <input type="checkbox" name="auto_save_notes" checked style="margin: 0;">
+                            <span class="form-label" style="margin: 0;">Automaticky ukládat poznámky</span>
+                        </label>
+                        
+                        <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;">
+                            <input type="checkbox" name="email_reminders" style="margin: 0;">
+                            <span class="form-label" style="margin: 0;">Emailové připomínky studia</span>
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="justify-self: start;">Uložit předvolby</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Data & Privacy -->
+        <div class="card">
+            <div class="card-header">
+                <h3 style="margin: 0;">🛡️ Data a soukromí</h3>
+            </div>
+            <div class="card-body">
+                <div style="display: flex; flex-direction: column; gap: 2rem;">
+                    <div>
+                        <h4 style="margin-bottom: 0.5rem; color: var(--text-primary);">Export dat</h4>
+                        <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.875rem;">
+                            Stáhněte si všechna svá data ve formátu JSON.
+                        </p>
+                        <button class="btn btn-secondary" id="exportDataBtn">📥 Exportovat data</button>
+                    </div>
+                    
+                    <div style="border-top: 1px solid var(--border); padding-top: 2rem;">
+                        <h4 style="margin-bottom: 0.5rem; color: var(--error);">Vymazání dat</h4>
+                        <p style="color: var(--error); margin-bottom: 1rem; font-size: 0.875rem; font-weight: 500;">
+                            Tato akce je nevratná. Všechna vaše data budou trvale smazána.
+                        </p>
+                        <button class="btn" id="deleteAccountBtn" 
+                                style="background-color: var(--error); color: white; border-color: var(--error);">
+                            🗑️ Smazat účet
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Settings -->
+        <div class="card">
+            <div class="card-header">
+                <h3 style="margin: 0;">🔧 API nastavení</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">OpenAI API klíč</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="password" class="form-control" name="openai_api_key" 
+                               placeholder="sk-..." value="••••••••••••••••" readonly
+                               style="background-color: var(--bg-tertiary);">
+                        <button type="button" class="btn btn-secondary" id="toggleApiKey">👁️</button>
+                    </div>
+                    <div style="font-size: 0.8125rem; color: var(--text-muted); margin-top: 0.25rem;">
+                        Pro změnu API klíče kontaktujte správce
+                    </div>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; font-size: 0.875rem;">
+                    <div style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--success); animation: pulse 2s infinite;"></div>
+                    <span style="color: var(--success); font-weight: 500;">API připojení je aktivní</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Password form
+    document.getElementById('passwordForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        
+        if (formData.get('new_password') !== formData.get('confirm_password')) {
+            alert('Hesla se neshodují!');
+            return;
+        }
+        
+        // Simulate password change
+        alert('Heslo bylo úspěšně změněno!');
+        this.reset();
+    });
+    
+    // Study preferences form
+    document.getElementById('studyPrefsForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        alert('Předvolby byly uloženy!');
+    });
+    
+    // API key toggle
+    document.getElementById('toggleApiKey').addEventListener('click', function() {
+        const input = document.querySelector('input[name="openai_api_key"]');
+        if (input.type === 'password') {
+            input.type = 'text';
+            this.textContent = '🙈';
+        } else {
+            input.type = 'password';
+            this.textContent = '👁️';
+        }
+    });
+    
+    // Export data
+    document.getElementById('exportDataBtn').addEventListener('click', function() {
+        alert('Exportování dat bylo zahájeno...');
+        
+        // Simulate export
+        setTimeout(() => {
+            const data = {
+                user: {
+                    username: '{{ current_user.username }}',
+                    email: '{{ current_user.email }}',
+                    created_at: '{{ current_user.created_at.isoformat() }}'
+                },
+                export_date: new Date().toISOString(),
+                notes: [],
+                study_sessions: [],
+                progress: []
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'studymate-data-export.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('Data byla úspěšně exportována!');
+        }, 2000);
+    });
+    
+    // Delete account
+    document.getElementById('deleteAccountBtn').addEventListener('click', function() {
+        if (confirm('Opravdu chcete trvale smazat svůj účet? Tato akce je nevratná!')) {
+            if (confirm('Jste si naprosto jisti? Všechna vaše data budou ztracena!')) {
+                alert('Funkce mazání účtu je zatím nedostupná.');
+            }
+        }
+    });
+</script>
+{% endblock %}

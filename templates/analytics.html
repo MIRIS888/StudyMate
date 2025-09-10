@@ -1,0 +1,690 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Statistiky učení - StudyMate{% endblock %}
+{% block page_title %}Statistiky učení{% endblock %}
+
+{% block content %}
+<div class="analytics-container">
+    <!-- Overview Stats -->
+    <div class="stats-overview">
+        <div class="stat-card">
+            <div class="stat-icon">⏰</div>
+            <div class="stat-content">
+                <div class="stat-number" id="totalMinutes">0</div>
+                <div class="stat-label">Celkem minut</div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">📚</div>
+            <div class="stat-content">
+                <div class="stat-number" id="totalSessions">0</div>
+                <div class="stat-label">Studijních relací</div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">📈</div>
+            <div class="stat-content">
+                <div class="stat-number" id="avgAccuracy">0%</div>
+                <div class="stat-label">Průměrná úspěšnost</div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">🎯</div>
+            <div class="stat-content">
+                <div class="stat-number" id="streakDays">0</div>
+                <div class="stat-label">Dní v řadě</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-section">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3>📊 Čas strávený učením</h3>
+                <div class="chart-controls">
+                    <select id="timeRange" class="form-control">
+                        <option value="7">Posledních 7 dní</option>
+                        <option value="30">Posledních 30 dní</option>
+                        <option value="90">Posledních 90 dní</option>
+                    </select>
+                </div>
+            </div>
+            <div class="chart-content">
+                <canvas id="studyTimeChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3>📚 Studium podle předmětů</h3>
+            </div>
+            <div class="chart-content">
+                <canvas id="subjectsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress by Subject -->
+    <div class="progress-section">
+        <div class="section-card">
+            <div class="section-header">
+                <h3>📖 Pokrok podle předmětů</h3>
+            </div>
+            <div class="section-content">
+                <div id="subjectProgress"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity Timeline -->
+    <div class="activity-section">
+        <div class="section-card">
+            <div class="section-header">
+                <h3>🕒 Poslední aktivita</h3>
+            </div>
+            <div class="section-content">
+                <div id="activityTimeline"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Study Calendar -->
+    <div class="calendar-section">
+        <div class="section-card">
+            <div class="section-header">
+                <h3>📅 Kalendář studia</h3>
+            </div>
+            <div class="section-content">
+                <div id="studyCalendar"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .analytics-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .stats-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        border: 1px solid var(--border-color);
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+
+    .stat-icon {
+        font-size: 2.5em;
+        opacity: 0.8;
+    }
+
+    .stat-number {
+        font-size: 2em;
+        font-weight: bold;
+        color: var(--primary-color);
+        line-height: 1;
+    }
+
+    .stat-label {
+        color: var(--text-muted);
+        font-size: 0.9em;
+        margin-top: 4px;
+    }
+
+    .charts-section {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+    }
+
+    .chart-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+    }
+
+    .chart-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .chart-header h3 {
+        margin: 0;
+        color: var(--dark-color);
+        font-size: 1.2em;
+    }
+
+    .chart-controls .form-control {
+        width: auto;
+        min-width: 150px;
+    }
+
+    .chart-content {
+        padding: 20px;
+        height: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .progress-section,
+    .activity-section,
+    .calendar-section {
+        margin-bottom: 30px;
+    }
+
+    .section-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+    }
+
+    .section-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .section-header h3 {
+        margin: 0;
+        color: var(--dark-color);
+        font-size: 1.2em;
+    }
+
+    .section-content {
+        padding: 24px;
+    }
+
+    .subject-progress-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .subject-progress-item:last-child {
+        border-bottom: none;
+    }
+
+    .subject-info {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+    }
+
+    .subject-name {
+        font-weight: 500;
+        color: var(--dark-color);
+        margin-bottom: 4px;
+    }
+
+    .subject-stats {
+        font-size: 0.9em;
+        color: var(--text-muted);
+    }
+
+    .progress-bar-container {
+        width: 200px;
+        height: 8px;
+        background: var(--border-color);
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 0 20px;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    .activity-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-time {
+        font-size: 0.85em;
+        color: var(--text-muted);
+        min-width: 80px;
+    }
+
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2em;
+    }
+
+    .activity-content {
+        flex: 1;
+    }
+
+    .activity-title {
+        font-weight: 500;
+        color: var(--dark-color);
+        margin-bottom: 2px;
+    }
+
+    .activity-meta {
+        font-size: 0.9em;
+        color: var(--text-muted);
+    }
+
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+        margin-top: 20px;
+    }
+
+    .calendar-day {
+        aspect-ratio: 1;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85em;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+
+    .calendar-day.has-activity {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .calendar-day.low-activity {
+        background: rgba(79, 172, 254, 0.3);
+    }
+
+    .calendar-day.medium-activity {
+        background: rgba(79, 172, 254, 0.6);
+    }
+
+    .calendar-day.high-activity {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .calendar-day:hover {
+        transform: scale(1.1);
+    }
+
+    .calendar-legend {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-top: 20px;
+        font-size: 0.9em;
+        color: var(--text-muted);
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .legend-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: var(--text-muted);
+    }
+
+    @media (max-width: 768px) {
+        .stats-overview {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .charts-section {
+            grid-template-columns: 1fr;
+        }
+        
+        .chart-content {
+            height: 250px;
+        }
+        
+        .subject-progress-item {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+        }
+        
+        .progress-bar-container {
+            width: 100%;
+            margin: 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Load Chart.js from CDN
+    const chartScript = document.createElement('script');
+    chartScript.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+    chartScript.onload = initializeAnalytics;
+    document.head.appendChild(chartScript);
+
+    function initializeAnalytics() {
+        loadAnalyticsData();
+        setupEventListeners();
+    }
+
+    async function loadAnalyticsData() {
+        try {
+            // Simulate loading analytics data - replace with actual API calls
+            const data = await generateSampleData();
+            
+            updateStats(data.stats);
+            createStudyTimeChart(data.dailyActivity);
+            createSubjectsChart(data.subjectBreakdown);
+            renderSubjectProgress(data.subjectProgress);
+            renderActivityTimeline(data.recentActivity);
+            renderStudyCalendar(data.calendarData);
+            
+        } catch (error) {
+            console.error('Error loading analytics:', error);
+        }
+    }
+
+    function updateStats(stats) {
+        document.getElementById('totalMinutes').textContent = stats.totalMinutes;
+        document.getElementById('totalSessions').textContent = stats.totalSessions;
+        document.getElementById('avgAccuracy').textContent = stats.avgAccuracy + '%';
+        document.getElementById('streakDays').textContent = stats.streakDays;
+    }
+
+    function createStudyTimeChart(data) {
+        const ctx = document.getElementById('studyTimeChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Minuty studia',
+                    data: data.values,
+                    borderColor: '#4facfe',
+                    backgroundColor: 'rgba(79, 172, 254, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value + ' min';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function createSubjectsChart(data) {
+        const ctx = document.getElementById('subjectsChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    data: data.values,
+                    backgroundColor: [
+                        '#4facfe',
+                        '#667eea',
+                        '#f093fb',
+                        '#f5576c',
+                        '#4ecdc4'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    function renderSubjectProgress(subjects) {
+        const container = document.getElementById('subjectProgress');
+        if (subjects.length === 0) {
+            container.innerHTML = '<div class="empty-state">Zatím nemáte žádné studijní předměty.</div>';
+            return;
+        }
+
+        container.innerHTML = subjects.map(subject => `
+            <div class="subject-progress-item">
+                <div class="subject-info">
+                    <div class="subject-name">${subject.name}</div>
+                    <div class="subject-stats">${subject.sessions} relací • ${subject.totalTime} minut</div>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" style="width: ${subject.progress}%"></div>
+                </div>
+                <div class="subject-stats">${subject.progress}%</div>
+            </div>
+        `).join('');
+    }
+
+    function renderActivityTimeline(activities) {
+        const container = document.getElementById('activityTimeline');
+        if (activities.length === 0) {
+            container.innerHTML = '<div class="empty-state">Zatím nemáte žádnou aktivitu.</div>';
+            return;
+        }
+
+        container.innerHTML = activities.map(activity => `
+            <div class="activity-item">
+                <div class="activity-time">${activity.time}</div>
+                <div class="activity-icon">${activity.icon}</div>
+                <div class="activity-content">
+                    <div class="activity-title">${activity.title}</div>
+                    <div class="activity-meta">${activity.meta}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderStudyCalendar(calendarData) {
+        const container = document.getElementById('studyCalendar');
+        
+        // Generate calendar for last 3 months
+        const today = new Date();
+        const startDate = new Date(today);
+        startDate.setMonth(today.getMonth() - 3);
+        
+        let calendarHTML = '<div class="calendar-grid">';
+        
+        // Generate days
+        const currentDate = new Date(startDate);
+        while (currentDate <= today) {
+            const dateStr = currentDate.toISOString().split('T')[0];
+            const activity = calendarData[dateStr] || 0;
+            let activityClass = '';
+            
+            if (activity === 0) {
+                activityClass = '';
+            } else if (activity < 30) {
+                activityClass = 'low-activity';
+            } else if (activity < 60) {
+                activityClass = 'medium-activity';
+            } else {
+                activityClass = 'high-activity';
+            }
+            
+            calendarHTML += `
+                <div class="calendar-day ${activityClass}" 
+                     title="${currentDate.toLocaleDateString()}: ${activity} minut">
+                    ${currentDate.getDate()}
+                </div>
+            `;
+            
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        calendarHTML += '</div>';
+        calendarHTML += `
+            <div class="calendar-legend">
+                <span>Méně</span>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f0f0f0;"></div>
+                    <span>0</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(79, 172, 254, 0.3);"></div>
+                    <span>1-30</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(79, 172, 254, 0.6);"></div>
+                    <span>31-60</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4facfe;"></div>
+                    <span>60+</span>
+                </div>
+                <span>Více</span>
+            </div>
+        `;
+        
+        container.innerHTML = calendarHTML;
+    }
+
+    function setupEventListeners() {
+        document.getElementById('timeRange').addEventListener('change', function() {
+            // Reload chart with new time range
+            loadAnalyticsData();
+        });
+    }
+
+    // Generate sample data - replace with actual API calls
+    async function generateSampleData() {
+        return {
+            stats: {
+                totalMinutes: 1250,
+                totalSessions: 15,
+                avgAccuracy: 85,
+                streakDays: 7
+            },
+            dailyActivity: {
+                labels: ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'],
+                values: [60, 45, 90, 30, 75, 20, 0]
+            },
+            subjectBreakdown: {
+                labels: ['Matematika', 'Fyzika', 'Chemie', 'Biologie'],
+                values: [40, 30, 20, 10]
+            },
+            subjectProgress: [
+                { name: 'Matematika', sessions: 8, totalTime: 480, progress: 75 },
+                { name: 'Fyzika', sessions: 5, totalTime: 300, progress: 60 },
+                { name: 'Chemie', sessions: 3, totalTime: 180, progress: 40 }
+            ],
+            recentActivity: [
+                {
+                    time: '14:30',
+                    icon: '📚',
+                    title: 'Analyzoval(a) materiál z Matematiky',
+                    meta: '45 minut • Derivace a integrály'
+                },
+                {
+                    time: '10:15',
+                    icon: '📝',
+                    title: 'Vytvořil(a) poznámku',
+                    meta: 'Newtonovy zákony'
+                },
+                {
+                    time: '09:00',
+                    icon: '🎯',
+                    title: 'Dokončil(a) test z Fyziky',
+                    meta: '85% úspěšnost • 10 otázek'
+                }
+            ],
+            calendarData: generateCalendarData()
+        };
+    }
+
+    function generateCalendarData() {
+        const data = {};
+        const today = new Date();
+        
+        for (let i = 0; i < 90; i++) {
+            const date = new Date(today);
+            date.setDate(today.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            
+            // Random activity data
+            data[dateStr] = Math.random() > 0.3 ? Math.floor(Math.random() * 120) : 0;
+        }
+        
+        return data;
+    }
+</script>
+{% endblock %}

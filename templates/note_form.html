@@ -1,0 +1,473 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}{{ title }} - StudyMate{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block header_actions %}
+<a href="{{ url_for('notes') }}" class="btn btn-secondary">
+    ← Zpět na poznámky
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <form method="POST" class="note-form">
+        {{ form.hidden_tag() }}
+        
+        <div class="form-section">
+            <div class="form-group">
+                {{ form.title.label(class="form-label required") }}
+                {{ form.title(class="form-control", placeholder="Zadejte název poznámky...") }}
+                {% if form.title.errors %}
+                    <div class="field-errors">
+                        <ul>
+                            {% for error in form.title.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.subject.label(class="form-label") }}
+                    {{ form.subject(class="form-control") }}
+                    {% if form.subject.errors %}
+                        <div class="field-errors">
+                            <ul>
+                                {% for error in form.subject.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    {{ form.tags.label(class="form-label") }}
+                    {{ form.tags(class="form-control", placeholder="matematika, fyzika, učení...") }}
+                    <div class="form-help">Oddělte tagy čárkou</div>
+                    {% if form.tags.errors %}
+                        <div class="field-errors">
+                            <ul>
+                                {% for error in form.tags.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                {{ form.content.label(class="form-label required") }}
+                {{ form.content(class="form-control content-textarea", 
+                               placeholder="Zde napište obsah své poznámky...\n\nMůžete používat:\n- Odrážky\n- **Tučný text**\n- *Kurzíva*\n- [Odkazy](http://example.com)") }}
+                {% if form.content.errors %}
+                    <div class="field-errors">
+                        <ul>
+                            {% for error in form.content.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                <div class="form-help">Podporuje základní Markdown formátování</div>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large">
+                💾 {{ 'Uložit změny' if note else 'Vytvořit poznámku' }}
+            </button>
+            <a href="{{ url_for('notes') }}" class="btn btn-secondary btn-large">
+                ❌ Zrušit
+            </a>
+            {% if note %}
+                <div class="form-actions-right">
+                    <form method="POST" action="{{ url_for('delete_note', note_id=note.id) }}" 
+                          class="delete-form" onsubmit="return confirm('Opravdu chcete smazat tuto poznámku?')">
+                        <button type="submit" class="btn btn-danger btn-large">
+                            🗑️ Smazat
+                        </button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    </form>
+    
+    <!-- Markdown Preview -->
+    <div class="preview-section" id="previewSection" style="display: none;">
+        <div class="section-header">
+            <h3>📖 Náhled</h3>
+            <button type="button" class="btn btn-secondary" id="togglePreview">
+                Skrýt náhled
+            </button>
+        </div>
+        <div class="preview-content" id="previewContent">
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 800px;
+        margin: 0 auto;
+        display: grid;
+        gap: 30px;
+    }
+
+    .note-form {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        border: 1px solid var(--border-color);
+    }
+
+    .form-section {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-label {
+        font-weight: 500;
+        color: var(--dark-color);
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .form-label.required::after {
+        content: "*";
+        color: var(--error-color);
+    }
+
+    .form-control {
+        padding: 12px 16px;
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 16px;
+        font-family: inherit;
+        transition: border-color 0.3s ease;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+    }
+
+    .content-textarea {
+        min-height: 300px;
+        resize: vertical;
+        font-family: 'Consolas', 'Monaco', monospace;
+        line-height: 1.6;
+    }
+
+    .form-help {
+        font-size: 0.9em;
+        color: var(--text-muted);
+        margin-top: 4px;
+        font-style: italic;
+    }
+
+    .field-errors {
+        color: var(--error-color);
+        font-size: 0.9em;
+        margin-top: 4px;
+    }
+
+    .field-errors ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        padding-top: 24px;
+        border-top: 1px solid var(--border-color);
+        margin-top: 24px;
+        position: relative;
+    }
+
+    .form-actions-right {
+        margin-left: auto;
+    }
+
+    .btn-large {
+        padding: 12px 24px;
+        font-size: 16px;
+    }
+
+    .btn-danger {
+        background: var(--error-color);
+        color: white;
+        border: 1px solid var(--error-color);
+    }
+
+    .btn-danger:hover {
+        background: #c82333;
+        border-color: #bd2130;
+    }
+
+    .delete-form {
+        margin: 0;
+        display: inline;
+    }
+
+    .preview-section {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+    }
+
+    .section-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--light-color);
+    }
+
+    .section-header h3 {
+        margin: 0;
+        color: var(--dark-color);
+        font-size: 1.2em;
+    }
+
+    .preview-content {
+        padding: 24px;
+        line-height: 1.6;
+        color: var(--dark-color);
+    }
+
+    .preview-content h1,
+    .preview-content h2,
+    .preview-content h3,
+    .preview-content h4,
+    .preview-content h5,
+    .preview-content h6 {
+        margin-top: 24px;
+        margin-bottom: 12px;
+        color: var(--dark-color);
+    }
+
+    .preview-content h1:first-child,
+    .preview-content h2:first-child,
+    .preview-content h3:first-child {
+        margin-top: 0;
+    }
+
+    .preview-content p {
+        margin-bottom: 16px;
+    }
+
+    .preview-content ul,
+    .preview-content ol {
+        margin-bottom: 16px;
+        padding-left: 24px;
+    }
+
+    .preview-content li {
+        margin-bottom: 4px;
+    }
+
+    .preview-content code {
+        background: var(--light-color);
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 0.9em;
+    }
+
+    .preview-content pre {
+        background: var(--light-color);
+        padding: 16px;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin-bottom: 16px;
+    }
+
+    .preview-content blockquote {
+        border-left: 4px solid var(--primary-color);
+        padding-left: 16px;
+        margin: 16px 0;
+        color: var(--text-muted);
+        font-style: italic;
+    }
+
+    .preview-content a {
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+
+    .preview-content a:hover {
+        text-decoration: underline;
+    }
+
+    .preview-content strong {
+        font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+        .form-container {
+            margin: 0 -10px;
+        }
+        
+        .note-form {
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .content-textarea {
+            min-height: 250px;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .form-actions-right {
+            margin-left: 0;
+            margin-top: 12px;
+        }
+        
+        .btn-large {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Markdown preview functionality
+    const contentTextarea = document.querySelector('.content-textarea');
+    const previewSection = document.getElementById('previewSection');
+    const previewContent = document.getElementById('previewContent');
+    const togglePreview = document.getElementById('togglePreview');
+    
+    // Add preview toggle button
+    const previewToggleBtn = document.createElement('button');
+    previewToggleBtn.type = 'button';
+    previewToggleBtn.className = 'btn btn-secondary';
+    previewToggleBtn.textContent = '👁️ Zobrazit náhled';
+    previewToggleBtn.style.marginTop = '8px';
+    
+    contentTextarea.parentElement.appendChild(previewToggleBtn);
+    
+    previewToggleBtn.addEventListener('click', function() {
+        if (previewSection.style.display === 'none') {
+            updatePreview();
+            previewSection.style.display = 'block';
+            previewToggleBtn.textContent = '👁️ Skrýt náhled';
+        } else {
+            previewSection.style.display = 'none';
+            previewToggleBtn.textContent = '👁️ Zobrazit náhled';
+        }
+    });
+    
+    togglePreview.addEventListener('click', function() {
+        previewSection.style.display = 'none';
+        previewToggleBtn.textContent = '👁️ Zobrazit náhled';
+    });
+    
+    // Update preview when content changes
+    let previewTimeout;
+    contentTextarea.addEventListener('input', function() {
+        if (previewSection.style.display !== 'none') {
+            clearTimeout(previewTimeout);
+            previewTimeout = setTimeout(updatePreview, 500);
+        }
+    });
+    
+    function updatePreview() {
+        const content = contentTextarea.value;
+        previewContent.innerHTML = parseMarkdown(content);
+    }
+    
+    // Simple markdown parser
+    function parseMarkdown(text) {
+        if (!text.trim()) {
+            return '<p><em>Náhled se zobrazí zde po napsání obsahu...</em></p>';
+        }
+        
+        // Convert markdown to HTML (basic implementation)
+        let html = text
+            // Headers
+            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+            // Bold
+            .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+            // Italic
+            .replace(/\*(.*)\*/gim, '<em>$1</em>')
+            // Links
+            .replace(/\[([^\]]*)\]\(([^\)]*)\)/gim, '<a href="$2" target="_blank">$1</a>')
+            // Code
+            .replace(/`([^`]*)`/gim, '<code>$1</code>')
+            // Line breaks
+            .replace(/\n\n/gim, '</p><p>')
+            .replace(/\n/gim, '<br>');
+        
+        // Wrap in paragraphs
+        html = '<p>' + html + '</p>';
+        
+        // Fix empty paragraphs
+        html = html.replace(/<p><\/p>/gim, '');
+        html = html.replace(/<p><h/gim, '<h');
+        html = html.replace(/<\/h([1-6])><\/p>/gim, '</h$1>');
+        
+        return html;
+    }
+    
+    // Auto-save functionality (optional)
+    if (document.querySelector('input[name="csrf_token"]')) {
+        let saveTimeout;
+        const form = document.querySelector('.note-form');
+        const inputs = form.querySelectorAll('input, textarea, select');
+        
+        inputs.forEach(input => {
+            input.addEventListener('input', function() {
+                clearTimeout(saveTimeout);
+                // Add visual indicator that changes are being made
+                document.title = '● ' + document.title.replace('● ', '');
+                
+                saveTimeout = setTimeout(() => {
+                    document.title = document.title.replace('● ', '');
+                }, 2000);
+            });
+        });
+    }
+</script>
+{% endblock %}

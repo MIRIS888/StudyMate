@@ -1,0 +1,579 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Dashboard - StudyMate{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">📚</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ total_sessions }}</div>
+                <div class="stat-label">Studijních relací</div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">⏰</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ total_study_time }}</div>
+                <div class="stat-label">Minut studia</div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">📝</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ total_notes }}</div>
+                <div class="stat-label">Poznámek</div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">📈</div>
+            <div class="stat-content">
+                <div class="stat-number">
+                    {% if total_study_time > 0 %}
+                        {{ "%.1f"|format(total_study_time / 60) }}h
+                    {% else %}
+                        0h
+                    {% endif %}
+                </div>
+                <div class="stat-label">Celkem hodin</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="dashboard-section">
+        <div class="section-card">
+            <div class="section-header">
+                <h3>🕒 Poslední studijní relace</h3>
+                <a href="{{ url_for('study') }}" class="btn btn-sm btn-primary">Nová relace</a>
+            </div>
+            <div class="section-content">
+                {% if recent_sessions %}
+                    <div class="activity-list">
+                        {% for session in recent_sessions %}
+                            <div class="activity-item">
+                                <div class="activity-icon">📖</div>
+                                <div class="activity-content">
+                                    <div class="activity-title">{{ session.topic }}</div>
+                                    <div class="activity-meta">
+                                        {{ session.duration_minutes }} min
+                                        {% if session.subject %} • {{ session.subject }}{% endif %}
+                                        • {{ session.created_at.strftime('%d.%m.%Y %H:%M') }}
+                                        {% if session.questions_answered > 0 %}
+                                            • {{ session.accuracy_percentage }}% úspěšnost
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <p>Zatím nemáte žádné studijní relace.</p>
+                        <a href="{{ url_for('study') }}" class="btn btn-primary">Začít studovat</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Notes -->
+    <div class="dashboard-section">
+        <div class="section-card">
+            <div class="section-header">
+                <h3>📝 Poslední poznámky</h3>
+                <a href="{{ url_for('notes') }}" class="btn btn-sm btn-primary">Všechny poznámky</a>
+            </div>
+            <div class="section-content">
+                {% if recent_notes %}
+                    <div class="notes-list">
+                        {% for note in recent_notes %}
+                            <div class="note-item">
+                                <div class="note-header">
+                                    <h4 class="note-title">{{ note.title }}</h4>
+                                    <span class="note-date">{{ note.updated_at.strftime('%d.%m.%Y') }}</span>
+                                </div>
+                                <div class="note-content">
+                                    {{ note.content[:150] }}{% if note.content|length > 150 %}...{% endif %}
+                                </div>
+                                {% if note.tag_list %}
+                                    <div class="note-tags">
+                                        {% for tag in note.tag_list %}
+                                            <span class="tag">{{ tag }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <p>Zatím nemáte žádné poznámky.</p>
+                        <a href="{{ url_for('notes') }}" class="btn btn-primary">Vytvořit poznámku</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="dashboard-section">
+        <div class="section-card">
+            <div class="section-header">
+                <h3>🚀 Rychlé akce</h3>
+            </div>
+            <div class="section-content">
+                <div class="quick-actions">
+                    <a href="{{ url_for('study') }}" class="quick-action">
+                        <div class="action-icon">📚</div>
+                        <div class="action-text">Analyzovat materiál</div>
+                    </a>
+                    <a href="{{ url_for('notes') }}" class="quick-action">
+                        <div class="action-icon">📝</div>
+                        <div class="action-text">Nová poznámka</div>
+                    </a>
+                    <a href="{{ url_for('analytics') }}" class="quick-action">
+                        <div class="action-icon">📊</div>
+                        <div class="action-text">Statistiky</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-grid {
+        display: grid;
+        gap: 32px;
+        animation: fadeIn 0.8s ease;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: var(--bg-card);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: var(--border-radius);
+        padding: 28px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border-color);
+        transition: all var(--transition-normal);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: var(--gradient-primary);
+        transform: scaleX(0);
+        transition: transform var(--transition-normal);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-xl);
+        border-color: rgba(255,255,255,0.2);
+    }
+
+    .stat-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .stat-icon {
+        font-size: 3em;
+        opacity: 0.9;
+        filter: drop-shadow(0 4px 8px rgba(99, 102, 241, 0.3));
+        animation: pulse 3s ease-in-out infinite;
+    }
+
+    .stat-number {
+        font-size: 2.2em;
+        font-weight: 800;
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1;
+        animation: glow 2s ease-in-out infinite alternate;
+    }
+
+    .stat-label {
+        color: var(--text-secondary);
+        font-size: 0.9em;
+        margin-top: 6px;
+        font-weight: 500;
+    }
+
+    .dashboard-section {
+        grid-column: 1 / -1;
+    }
+
+    .section-card {
+        background: var(--bg-card);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-lg);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+        transition: all var(--transition-normal);
+        position: relative;
+    }
+
+    .section-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--gradient-bg);
+        opacity: 0;
+        transition: opacity var(--transition-normal);
+        pointer-events: none;
+    }
+
+    .section-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-xl);
+        border-color: rgba(255,255,255,0.15);
+    }
+
+    .section-card:hover::before {
+        opacity: 1;
+    }
+
+    .section-header {
+        padding: 28px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--bg-glass);
+        backdrop-filter: blur(10px);
+        position: relative;
+        z-index: 2;
+    }
+
+    .section-header h3 {
+        margin: 0;
+        color: var(--text-primary);
+        font-size: 1.3em;
+        font-weight: 700;
+    }
+
+    .section-content {
+        padding: 28px;
+        position: relative;
+        z-index: 2;
+    }
+
+    .activity-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .activity-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 20px;
+        background: var(--bg-glass);
+        backdrop-filter: blur(10px);
+        border-radius: var(--border-radius-sm);
+        border: 1px solid var(--border-color);
+        border-left: 4px solid var(--primary-color);
+        transition: all var(--transition-normal);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .activity-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(99,102,241,0.1), transparent);
+        transition: left var(--transition-slow);
+    }
+
+    .activity-item:hover {
+        background: var(--bg-glass-hover);
+        transform: translateX(4px);
+        border-color: rgba(255,255,255,0.2);
+    }
+
+    .activity-item:hover::before {
+        left: 100%;
+    }
+
+    .activity-icon {
+        font-size: 1.8em;
+        filter: drop-shadow(0 2px 4px rgba(99, 102, 241, 0.3));
+    }
+
+    .activity-title {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 6px;
+        font-size: 1.05em;
+    }
+
+    .activity-meta {
+        font-size: 0.9em;
+        color: var(--text-secondary);
+    }
+
+    .notes-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .note-item {
+        padding: 20px;
+        background: var(--bg-glass);
+        backdrop-filter: blur(10px);
+        border-radius: var(--border-radius-sm);
+        border: 1px solid var(--border-color);
+        border-left: 4px solid var(--secondary-color);
+        transition: all var(--transition-normal);
+        position: relative;
+    }
+
+    .note-item:hover {
+        background: var(--bg-glass-hover);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .note-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .note-title {
+        margin: 0;
+        font-size: 1.15em;
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    .note-date {
+        font-size: 0.85em;
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    .note-content {
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin-bottom: 12px;
+    }
+
+    .note-tags {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .tag {
+        background: var(--gradient-primary);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 0.75em;
+        font-weight: 500;
+        box-shadow: var(--shadow-sm);
+        transition: all var(--transition-fast);
+    }
+
+    .tag:hover {
+        transform: scale(1.05);
+        box-shadow: var(--shadow-md);
+    }
+
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 16px;
+    }
+
+    .quick-action {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 24px;
+        background: var(--bg-glass);
+        backdrop-filter: blur(10px);
+        border-radius: var(--border-radius-sm);
+        text-decoration: none;
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        transition: all var(--transition-normal);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .quick-action::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--gradient-primary);
+        opacity: 0;
+        transition: opacity var(--transition-normal);
+    }
+
+    .quick-action:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-glow);
+        border-color: var(--primary-color);
+    }
+
+    .quick-action:hover::before {
+        opacity: 0.9;
+    }
+
+    .quick-action:hover .action-icon,
+    .quick-action:hover .action-text {
+        position: relative;
+        z-index: 2;
+        color: white;
+    }
+
+    .action-icon {
+        font-size: 2.2em;
+        margin-bottom: 12px;
+        filter: drop-shadow(0 4px 8px rgba(99, 102, 241, 0.2));
+        transition: all var(--transition-normal);
+    }
+
+    .action-text {
+        font-weight: 600;
+        text-align: center;
+        transition: all var(--transition-normal);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 48px;
+        color: var(--text-secondary);
+        background: var(--bg-glass);
+        border-radius: var(--border-radius-sm);
+        border: 1px dashed var(--border-color);
+    }
+
+    .empty-state h3 {
+        color: var(--text-primary);
+        margin-bottom: 16px;
+    }
+
+    .empty-state p {
+        margin-bottom: 24px;
+        line-height: 1.6;
+    }
+
+    .btn-sm {
+        padding: 10px 18px;
+        font-size: 0.9em;
+        border-radius: var(--border-radius-sm);
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-grid {
+            gap: 24px;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+        
+        .stat-card {
+            padding: 20px;
+        }
+        
+        .section-header {
+            flex-direction: column;
+            gap: 16px;
+            align-items: stretch;
+            padding: 20px;
+        }
+        
+        .section-content {
+            padding: 20px;
+        }
+        
+        .quick-actions {
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        
+        .activity-item {
+            padding: 16px;
+        }
+        
+        .note-item {
+            padding: 16px;
+        }
+    }
+    
+    /* Dashboard specific animations */
+    .stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .stat-card:nth-child(2) { animation-delay: 0.2s; }
+    .stat-card:nth-child(3) { animation-delay: 0.3s; }
+    .stat-card:nth-child(4) { animation-delay: 0.4s; }
+    
+    .section-card:nth-child(1) { animation-delay: 0.5s; }
+    .section-card:nth-child(2) { animation-delay: 0.6s; }
+    .section-card:nth-child(3) { animation-delay: 0.7s; }
+    
+    .stat-card,
+    .section-card {
+        animation: fadeIn 0.6s ease forwards;
+        opacity: 0;
+    }
+    
+    @keyframes fadeIn {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+    }
+</style>
+{% endblock %}

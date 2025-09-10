@@ -1,0 +1,169 @@
+{% extends "base_dashboard_new.html" %}
+
+{% block title %}Dashboard - StudyMate{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Stats Overview -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="card">
+        <div class="card-body" style="text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📚</div>
+            <div style="font-size: 2rem; font-weight: 700; color: var(--primary); margin-bottom: 0.25rem;">
+                {{ total_sessions }}
+            </div>
+            <div style="color: var(--text-muted); font-size: 0.875rem;">Studijních relací</div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-body" style="text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">⏰</div>
+            <div style="font-size: 2rem; font-weight: 700; color: var(--success); margin-bottom: 0.25rem;">
+                {{ total_study_time }}
+            </div>
+            <div style="color: var(--text-muted); font-size: 0.875rem;">Minut studia</div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-body" style="text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📝</div>
+            <div style="font-size: 2rem; font-weight: 700; color: var(--warning); margin-bottom: 0.25rem;">
+                {{ total_notes }}
+            </div>
+            <div style="color: var(--text-muted); font-size: 0.875rem;">Poznámek</div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-body" style="text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📈</div>
+            <div style="font-size: 2rem; font-weight: 700; color: var(--accent); margin-bottom: 0.25rem;">
+                {% if total_study_time > 0 %}
+                    {{ "%.1f"|format(total_study_time / 60) }}h
+                {% else %}
+                    0h
+                {% endif %}
+            </div>
+            <div style="color: var(--text-muted); font-size: 0.875rem;">Celkem hodin</div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Grid -->
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+    <!-- Recent Activity -->
+    <div class="card">
+        <div class="card-header">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                    🕒 Poslední studijní relace
+                </h3>
+                <a href="{{ url_for('study') }}" class="btn btn-primary btn-sm">Nová relace</a>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if recent_sessions %}
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    {% for session in recent_sessions %}
+                        <div style="padding: 1rem; background-color: var(--bg-tertiary); border-radius: var(--radius); border-left: 4px solid var(--primary);">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <div style="font-size: 1.5rem;">📖</div>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; margin-bottom: 0.25rem;">{{ session.topic }}</div>
+                                    <div style="color: var(--text-muted); font-size: 0.8125rem;">
+                                        {{ session.duration_minutes }} min
+                                        {% if session.subject %} • {{ session.subject }}{% endif %}
+                                        • {{ session.created_at.strftime('%d.%m.%Y %H:%M') }}
+                                        {% if session.questions_answered > 0 %}
+                                            • {{ session.accuracy_percentage }}% úspěšnost
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">📚</div>
+                    <p>Zatím nemáte žádné studijní relace.</p>
+                    <a href="{{ url_for('study') }}" class="btn btn-primary" style="margin-top: 1rem;">Začít studovat</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card">
+        <div class="card-header">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                🚀 Rychlé akce
+            </h3>
+        </div>
+        <div class="card-body">
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <a href="{{ url_for('study') }}" class="btn btn-primary btn-block" style="justify-content: flex-start;">
+                    <span style="font-size: 1.25rem;">📚</span>
+                    Analyzovat materiál
+                </a>
+                <a href="{{ url_for('notes') }}" class="btn btn-secondary btn-block" style="justify-content: flex-start;">
+                    <span style="font-size: 1.25rem;">📝</span>
+                    Nová poznámka
+                </a>
+                <a href="{{ url_for('analytics') }}" class="btn btn-secondary btn-block" style="justify-content: flex-start;">
+                    <span style="font-size: 1.25rem;">📊</span>
+                    Statistiky
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Notes -->
+<div class="card">
+    <div class="card-header">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                📝 Poslední poznámky
+            </h3>
+            <a href="{{ url_for('notes') }}" class="btn btn-primary btn-sm">Všechny poznámky</a>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if recent_notes %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                {% for note in recent_notes %}
+                    <div style="padding: 1.25rem; background-color: var(--bg-tertiary); border-radius: var(--radius); border: 1px solid var(--border-light);">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                            <h4 style="margin: 0; font-size: 1rem; font-weight: 600;">{{ note.title }}</h4>
+                            <span style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap;">
+                                {{ note.updated_at.strftime('%d.%m.%Y') }}
+                            </span>
+                        </div>
+                        <div style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0.75rem;">
+                            {{ note.content[:150] }}{% if note.content|length > 150 %}...{% endif %}
+                        </div>
+                        {% if note.tag_list %}
+                            <div style="display: flex; gap: 0.375rem; flex-wrap: wrap;">
+                                {% for tag in note.tag_list %}
+                                    <span style="background-color: var(--primary); color: white; padding: 0.125rem 0.5rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 500;">
+                                        {{ tag }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">📝</div>
+                <p>Zatím nemáte žádné poznámky.</p>
+                <a href="{{ url_for('notes') }}" class="btn btn-primary" style="margin-top: 1rem;">Vytvořit poznámku</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

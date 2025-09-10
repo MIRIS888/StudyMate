@@ -1,0 +1,599 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Nastavení - StudyMate{% endblock %}
+{% block page_title %}Nastavení{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <div class="settings-grid">
+        <!-- Profile Settings -->
+        <div class="settings-card">
+            <div class="card-header">
+                <h3>👤 Profil</h3>
+            </div>
+            <div class="card-content">
+                <form class="settings-form" id="profileForm">
+                    <div class="form-group">
+                        <label class="form-label">Uživatelské jméno</label>
+                        <input type="text" class="form-control" value="{{ current_user.username }}" readonly>
+                        <div class="form-help">Uživatelské jméno nelze změnit</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" value="{{ current_user.email }}" readonly>
+                        <div class="form-help">Pro změnu emailu kontaktujte podporu</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Registrace</label>
+                        <input type="text" class="form-control" value="{{ current_user.created_at.strftime('%d.%m.%Y %H:%M') }}" readonly>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Password Change -->
+        <div class="settings-card">
+            <div class="card-header">
+                <h3>🔒 Změna hesla</h3>
+            </div>
+            <div class="card-content">
+                <form class="settings-form" id="passwordForm">
+                    <div class="form-group">
+                        <label class="form-label">Současné heslo</label>
+                        <input type="password" class="form-control" name="current_password" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Nové heslo</label>
+                        <input type="password" class="form-control" name="new_password" required minlength="6">
+                        <div class="form-help">Minimálně 6 znaků</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Potvrdit nové heslo</label>
+                        <input type="password" class="form-control" name="confirm_password" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Změnit heslo</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Study Preferences -->
+        <div class="settings-card">
+            <div class="card-header">
+                <h3>📚 Předvolby studia</h3>
+            </div>
+            <div class="card-content">
+                <form class="settings-form" id="studyPrefsForm">
+                    <div class="form-group">
+                        <label class="form-label">Výchozí počet otázek</label>
+                        <select class="form-control" name="default_questions">
+                            <option value="5" selected>5 otázek</option>
+                            <option value="10">10 otázek</option>
+                            <option value="15">15 otázek</option>
+                            <option value="20">20 otázek</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Výchozí počet kartiček</label>
+                        <select class="form-control" name="default_flashcards">
+                            <option value="5" selected>5 kartiček</option>
+                            <option value="10">10 kartiček</option>
+                            <option value="15">15 kartiček</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="auto_save_notes" checked>
+                            <span class="checkmark"></span>
+                            Automaticky ukládat poznámky
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="email_reminders">
+                            <span class="checkmark"></span>
+                            Emailové připomínky studia
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Uložit předvolby</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Theme Settings -->
+        <div class="settings-card">
+            <div class="card-header">
+                <h3>🎨 Vzhled</h3>
+            </div>
+            <div class="card-content">
+                <form class="settings-form" id="themeForm">
+                    <div class="form-group">
+                        <label class="form-label">Barevný motiv</label>
+                        <div class="theme-options">
+                            <label class="theme-option active">
+                                <input type="radio" name="theme" value="light" checked>
+                                <span class="theme-preview light-theme">
+                                    <div class="theme-preview-header"></div>
+                                    <div class="theme-preview-content"></div>
+                                </span>
+                                Světlý
+                            </label>
+                            
+                            <label class="theme-option">
+                                <input type="radio" name="theme" value="dark">
+                                <span class="theme-preview dark-theme">
+                                    <div class="theme-preview-header"></div>
+                                    <div class="theme-preview-content"></div>
+                                </span>
+                                Tmavý
+                            </label>
+                            
+                            <label class="theme-option">
+                                <input type="radio" name="theme" value="auto">
+                                <span class="theme-preview auto-theme">
+                                    <div class="theme-preview-header"></div>
+                                    <div class="theme-preview-content"></div>
+                                </span>
+                                Automaticky
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Použít motiv</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Data & Privacy -->
+        <div class="settings-card">
+            <div class="card-header">
+                <h3>🛡️ Data a soukromí</h3>
+            </div>
+            <div class="card-content">
+                <div class="settings-section">
+                    <h4>Export dat</h4>
+                    <p>Stáhněte si všechna svá data ve formátu JSON.</p>
+                    <button class="btn btn-secondary" id="exportDataBtn">📥 Exportovat data</button>
+                </div>
+                
+                <div class="settings-section">
+                    <h4>Vymazání dat</h4>
+                    <p class="warning-text">Tato akce je nevratná. Všechna vaše data budou trvale smazána.</p>
+                    <button class="btn btn-danger" id="deleteAccountBtn">🗑️ Smazat účet</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Settings -->
+        <div class="settings-card">
+            <div class="card-header">
+                <h3>🔧 API nastavení</h3>
+            </div>
+            <div class="card-content">
+                <form class="settings-form" id="apiForm">
+                    <div class="form-group">
+                        <label class="form-label">OpenAI API klíč</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" name="openai_api_key" 
+                                   placeholder="sk-..." value="••••••••••••••••">
+                            <button type="button" class="btn btn-secondary" id="toggleApiKey">👁️</button>
+                        </div>
+                        <div class="form-help">Pro změnu API klíče kontaktujte správce</div>
+                    </div>
+                    
+                    <div class="api-status">
+                        <div class="status-indicator online"></div>
+                        <span>API připojení je aktivní</span>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-container {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .settings-grid {
+        display: grid;
+        gap: 24px;
+    }
+
+    .settings-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+    }
+
+    .card-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border-color);
+        background: var(--light-color);
+    }
+
+    .card-header h3 {
+        margin: 0;
+        color: var(--dark-color);
+        font-size: 1.2em;
+    }
+
+    .card-content {
+        padding: 24px;
+    }
+
+    .settings-form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-label {
+        font-weight: 500;
+        color: var(--dark-color);
+        margin-bottom: 8px;
+    }
+
+    .form-control {
+        padding: 12px 16px;
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.3s ease;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+    }
+
+    .form-control:readonly {
+        background: var(--light-color);
+        color: var(--text-muted);
+    }
+
+    .form-help {
+        font-size: 0.9em;
+        color: var(--text-muted);
+        margin-top: 4px;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        font-weight: 500;
+        color: var(--dark-color);
+        margin-bottom: 0;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+        margin: 0;
+        width: 20px;
+        height: 20px;
+    }
+
+    .theme-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 16px;
+        margin-top: 12px;
+    }
+
+    .theme-option {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 16px;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+
+    .theme-option:hover {
+        border-color: var(--primary-color);
+    }
+
+    .theme-option.active {
+        border-color: var(--primary-color);
+        background: rgba(79, 172, 254, 0.05);
+    }
+
+    .theme-option input[type="radio"] {
+        display: none;
+    }
+
+    .theme-preview {
+        width: 60px;
+        height: 40px;
+        border-radius: 6px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        position: relative;
+    }
+
+    .theme-preview-header {
+        height: 12px;
+        background: var(--primary-color);
+    }
+
+    .theme-preview-content {
+        height: 28px;
+    }
+
+    .light-theme .theme-preview-content {
+        background: white;
+    }
+
+    .dark-theme .theme-preview-content {
+        background: #2d3748;
+    }
+
+    .auto-theme .theme-preview-content {
+        background: linear-gradient(90deg, white 50%, #2d3748 50%);
+    }
+
+    .settings-section {
+        padding: 20px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .settings-section:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .settings-section h4 {
+        margin: 0 0 8px 0;
+        color: var(--dark-color);
+        font-size: 1.1em;
+    }
+
+    .settings-section p {
+        margin: 0 0 16px 0;
+        color: var(--text-muted);
+        line-height: 1.5;
+    }
+
+    .warning-text {
+        color: var(--error-color) !important;
+        font-weight: 500;
+    }
+
+    .btn-danger {
+        background: var(--error-color);
+        color: white;
+        border: 1px solid var(--error-color);
+    }
+
+    .btn-danger:hover {
+        background: #c82333;
+        border-color: #bd2130;
+    }
+
+    .input-group {
+        display: flex;
+        gap: 0;
+    }
+
+    .input-group .form-control {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+        border-right: none;
+    }
+
+    .input-group .btn {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        padding: 12px 16px;
+    }
+
+    .api-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+        font-size: 0.9em;
+    }
+
+    .status-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--text-muted);
+    }
+
+    .status-indicator.online {
+        background: var(--success-color);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+
+    @media (max-width: 768px) {
+        .settings-container {
+            margin: 0 -10px;
+        }
+        
+        .settings-card {
+            border-radius: 8px;
+        }
+        
+        .theme-options {
+            grid-template-columns: 1fr;
+        }
+        
+        .input-group {
+            flex-direction: column;
+        }
+        
+        .input-group .form-control {
+            border-radius: 8px;
+            border-right: 2px solid var(--border-color);
+        }
+        
+        .input-group .btn {
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Theme switching
+    document.getElementById('themeForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const theme = formData.get('theme');
+        
+        // Apply theme (this would normally save to user preferences)
+        if (theme === 'dark') {
+            document.body.classList.add('dark-theme');
+        } else {
+            document.body.classList.remove('dark-theme');
+        }
+        
+        // Show success message
+        showNotification('Motiv byl změněn!', 'success');
+    });
+    
+    // Theme option selection
+    document.querySelectorAll('.theme-option input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            this.closest('.theme-option').classList.add('active');
+        });
+    });
+    
+    // Password form
+    document.getElementById('passwordForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        
+        if (formData.get('new_password') !== formData.get('confirm_password')) {
+            showNotification('Hesla se neshodují!', 'error');
+            return;
+        }
+        
+        // Simulate password change
+        showNotification('Heslo bylo úspěšně změněno!', 'success');
+        this.reset();
+    });
+    
+    // Study preferences form
+    document.getElementById('studyPrefsForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        showNotification('Předvolby byly uloženy!', 'success');
+    });
+    
+    // API key toggle
+    document.getElementById('toggleApiKey').addEventListener('click', function() {
+        const input = document.querySelector('input[name="openai_api_key"]');
+        if (input.type === 'password') {
+            input.type = 'text';
+            this.textContent = '🙈';
+        } else {
+            input.type = 'password';
+            this.textContent = '👁️';
+        }
+    });
+    
+    // Export data
+    document.getElementById('exportDataBtn').addEventListener('click', function() {
+        showNotification('Exportování dat bylo zahájeno...', 'info');
+        
+        // Simulate export
+        setTimeout(() => {
+            const data = {
+                user: {
+                    username: '{{ current_user.username }}',
+                    email: '{{ current_user.email }}',
+                    created_at: '{{ current_user.created_at.isoformat() }}'
+                },
+                export_date: new Date().toISOString(),
+                notes: [],
+                study_sessions: [],
+                progress: []
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'studymate-data-export.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('Data byla úspěšně exportována!', 'success');
+        }, 2000);
+    });
+    
+    // Delete account
+    document.getElementById('deleteAccountBtn').addEventListener('click', function() {
+        if (confirm('Opravdu chcete trvale smazat svůj účet? Tato akce je nevratná!')) {
+            if (confirm('Jste si naprosto jisti? Všechna vaše data budou ztracena!')) {
+                showNotification('Funkce mazání účtu je zatím nedostupná.', 'info');
+            }
+        }
+    });
+    
+    // Show notification function
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `flash-message ${type}`;
+        notification.textContent = message;
+        notification.style.cursor = 'pointer';
+        notification.onclick = function() { this.remove(); };
+        
+        const container = document.querySelector('.flash-messages');
+        container.appendChild(notification);
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove();
+                    }
+                }, 300);
+            }
+        }, 5000);
+    }
+</script>
+{% endblock %}
